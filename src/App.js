@@ -1,37 +1,70 @@
-import React, { useState } from 'react';
-import SearchBar from './components/SearchBar';
-import BookList from './components/BookList';
-import axios from 'axios';
-import './styles.css';
+import React, { useState } from "react";
+import BookList from "./components/BookList";
+import SearchBar from "./components/SearchBar";
+import "./styles.css";
 
-const App = () => {
-    const [books, setBooks] = useState([]);
+function App() {
+  const [books, setBooks] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
 
-    const fetchBooks = async (query) => {
-        try {
-            const response = await axios.get(
-                `https://www.googleapis.com/books/v1/volumes?q=${query}`
-            );
-            const fetchedBooks = response.data.items.map((item) => ({
-                id: item.id,
-                title: item.volumeInfo.title,
-                authors: item.volumeInfo.authors,
-                description: item.volumeInfo.description,
-                image: item.volumeInfo.imageLinks?.thumbnail,
-            }));
-            setBooks(fetchedBooks);
-        } catch (error) {
-            console.error('Error fetching books:', error);
-        }
-    };
+  const handleSearch = (query) => {
+    const API_URL = `https://www.googleapis.com/books/v1/volumes?q=${query}`;
+    fetch(API_URL)
+      .then((response) => response.json())
+      .then((data) => {
+        setBooks(data.items || []);
+      })
+      .catch((error) => console.error("Error fetching books:", error));
+  };
 
-    return (
-        <div className="app">
-            <h1>See Your Favourite Books</h1>
-            <SearchBar onSearch={fetchBooks} />
-            <BookList books={books} />
+  const handleCardClick = (book) => {
+    setSelectedBook(book);
+  };
+
+  const closePopup = () => {
+    setSelectedBook(null);
+  };
+
+  return (
+    <div className="app">
+      <header className="hero">
+        <div className="hero-content">
+          <h1>Welcome to Book App</h1>
+          <p>Discover books, explore details, and find your next great read.</p>
+          <SearchBar onSearch={handleSearch} />
         </div>
-    );
-};
+      </header>
+
+      <main className="content">
+        {books.length > 0 ? (
+          <BookList books={books} onCardClick={handleCardClick} />
+        ) : (
+          <div className="no-books">
+            <h2>Start your search to explore amazing books!</h2>
+          </div>
+        )}
+      </main>
+
+      {selectedBook && (
+        <div className="popup">
+          <div className="popup-content">
+            <button className="close-btn" onClick={closePopup}>
+              &times;
+            </button>
+            <img
+              src={selectedBook.volumeInfo.imageLinks?.thumbnail || "https://via.placeholder.com/150"}
+              alt={selectedBook.volumeInfo.title}
+            />
+            <div className="popup-details">
+              <h2>{selectedBook.volumeInfo.title}</h2>
+              <p><strong>Authors:</strong> {selectedBook.volumeInfo.authors?.join(", ") || "Unknown"}</p>
+              <p>{selectedBook.volumeInfo.description || "No description available."}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default App;
